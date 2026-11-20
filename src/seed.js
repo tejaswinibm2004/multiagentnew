@@ -133,3 +133,65 @@ export async function seedDemoData() {
 
   return { seeded: true, websiteId: siteId, demoKey };
 }
+
+// Extra demo sites are added idempotently so existing local databases pick them up on boot.
+const EXTRA_SITES = [
+  {
+    name: 'AccountLab', slug: 'account-lab', repo: 'YOUR_GITHUB_USER/account-lab',
+    issues: [
+      { key: 'ISSUE-login-any-password', title: 'Login accepts any password and reports success on failure', description: 'Sign in accepts any non-empty password. A failed login also shows "Welcome! You are now signed in."', page: '/login', status: 'AWAITING_APPROVAL', risk: 82, band: 'CRITICAL', type: 'security', note: 'Auth/login path — human gate required.', steps: 6, analyzer: { is_defect: true, confidence: 0.95, defect_type: 'security' } },
+      { key: 'ISSUE-login-visible-password', title: 'Password field exposes the typed password', description: 'The password input renders as type="text" so the password is visible on screen.', page: '/login', status: 'RECEIVED', risk: 66, band: 'MEDIUM', type: 'security', steps: 0 },
+    ],
+  },
+  {
+    name: 'CountingLab', slug: 'counting-lab', repo: 'YOUR_GITHUB_USER/counting-lab',
+    issues: [
+      { key: 'ISSUE-count-off-by-one', title: 'Order count shows 16 when there are 7 orders', description: 'countOrders starts at 1 and loops with <=, so every KPI is inflated.', page: '/', status: 'RECEIVED', risk: 30, band: 'LOW', type: 'logic', steps: 0 },
+      { key: 'ISSUE-pagination-last-page', title: 'Pagination hides the last page of orders', description: 'Total pages uses Math.floor instead of Math.ceil, so the final partial page is unreachable.', page: '/orders', status: 'TRIAGING', risk: 35, band: 'LOW', type: 'logic', steps: 2 },
+    ],
+  },
+  {
+    name: 'CartLab', slug: 'cart-lab', repo: 'YOUR_GITHUB_USER/cart-lab',
+    issues: [
+      { key: 'ISSUE-cart-quantity-string', title: 'Adding the same item twice makes quantity 11', description: 'The quantity uses string concatenation, so a second click turns 1 into 11 and breaks the total.', page: '/', status: 'AWAITING_APPROVAL', risk: 76, band: 'CRITICAL', type: 'money_checkout', note: 'Money identifiers in diff — human gate required.', steps: 6, analyzer: { is_defect: true, confidence: 0.92, defect_type: 'money_checkout' } },
+      { key: 'ISSUE-cart-euro-symbol', title: 'Checkout total is charged in euros', description: 'The confirmation shows a euro symbol on a dollar store.', page: '/checkout', status: 'RECEIVED', risk: 48, band: 'MEDIUM', type: 'money_checkout', steps: 0 },
+    ],
+  },
+];
+
+export async function ensureDemoSites() {
+  const owner = await get('SELECT id FROM users ORDER BY id LIMIT 1');
+  const added = [];
+  for (const s of EXTRA_SITES) {
+    const exists = await get('SELECT id FROM websites WHERE slug = ?', [s.slug]);
+    if (exists) continue;
+    const siteId = await insertGetId('websites', {
+      name: s.name, slug: s.slug, repo_full_name: s.repo, branch: 'main',
+      live_url: `https://${s.slug}.onrender.com`,
+      version_json_url: `https://${s.slug}.onrender.com/version.json`,
+      health_urls: JSON.stringify([`https://${s.slug}.onrender.com`]),
+      allowed_origins: JSON.stringify([`https://${s.slug}.onrender.com`, 'http://localhost:5173']),
+      always_approve: 0, auto_deploy: 1, created_by: owner?.id || null,
+    });
+    const key = `bs_demo_${crypto.randomBytes(6).toString('hex')}`;
+    await insertGetId('ingestion_keys', { website_id: siteId, key_hash: sha256(key), label: `${s.name} demo key`, created_at: nowIso() });
+    console.log(`[seed] ${s.slug} ingestion key (shown once): ${key}`);
+
+    for (const o of s.issues) {
+      const id = await insertGetId('issues', {
+        issue_key: o.key, website_id: siteId, title: o.title, description: o.description || '',
+        page_path: o.page || '/', status: o.status, risk_score: o.risk, risk_band: o.band,
+        defect_type: o.type, fingerprint: crypto.randomBytes(8).toString('hex'), occurrences: 1,
+        reporter: 'demo-visitor', payload: '{}', analyzer_json: JSON.stringify(o.analyzer || {}),
+        localizer_json: '{}', proposed_files: '[]', summary: o.title, admin_note: o.note || '',
+        created_at: nowIso(), updated_at: nowIso(),
+      });
+      await seedSteps(id, o.steps ?? 0);
+      if (o.status === 'AWAITING_APPROVAL') {
+        await insertGetId('audit_log', { actor: 'system', action: 'approval_requested', target: o.key, detail: JSON.stringify({ reasons: [o.note] }), created_at: nowIso() });
+      }
+    }
+    added.push(s.slug);
+  }
+  return added;
+}

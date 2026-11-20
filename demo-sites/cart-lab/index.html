@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CartLab — checkout demo</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/config.js"></script>
+</head>
+<body>
+  <header><div class="logo">Cart<span>Lab</span></div><div class="sub">A checkout full of arithmetic mistakes</div><div class="cart-pill">🛒 <b id="count">0</b> items</div></header>
+  <main>
+    <section class="products" id="products"></section>
+    <aside class="summary" id="summary">
+      <h2>Order summary</h2>
+      <div class="line"><span>Subtotal</span><b id="subtotal">$0.00</b></div>
+      <div class="line"><span>Shipping</span><b id="shipping">$0.00</b></div>
+      <div class="line"><span>Discount (SAVE10)</span><b id="discount">-$0.00</b></div>
+      <div class="line"><span>Tax (8%)</span><b id="tax">$0.00</b></div>
+      <div class="line total"><span>Total</span><b id="total">$0.00</b></div>
+      <div class="coupon"><input id="coupon" placeholder="Coupon code"><button id="apply">Apply</button></div>
+      <div id="couponMsg" class="cmsg"></div>
+      <button class="checkout" id="checkout">Place order</button>
+    </aside>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

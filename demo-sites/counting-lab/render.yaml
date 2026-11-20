@@ -1,0 +1,12 @@
+staticSites:
+  - name: counting-lab
+    runtime: static
+    plan: free
+    branch: main
+    buildCommand: npm run build
+    staticPublishPath: .
+    envVars:
+      - key: BUGSHIELD_ENDPOINT
+        value: https://buildshield-re.onrender.com/sdk/bugshield.js
+      - key: BUGSHIELD_KEY
+        sync: false

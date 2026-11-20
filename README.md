@@ -22,6 +22,19 @@ npm start          # http://localhost:10000
 
 Both UI and API run in one process. `npm test` runs 32 `node:test` tests. `npm run eval` regenerates the Evaluation view JSON.
 
+### Extra demo websites
+
+`npm run demo` starts a static server on **http://localhost:5173** with four client sites:
+
+| Path | Site | Bug categories |
+|------|------|----------------|
+| `/shop` | Amazin Demo Shop | copy typo, cart, checkout |
+| `/account-lab` | AccountLab | login / auth / session |
+| `/counting-lab` | CountingLab | counting / aggregation / pagination |
+| `/cart-lab` | CartLab | cart / money arithmetic |
+
+All four are seeded into the dashboard's **Websites** view on first boot (and added idempotently to an existing local DB). Each has its own `render.yaml` and build script. Bug lists are in `demo-sites/README.md`. Replace `REPLACE_WITH_DEMO_KEY` in each site's `config.js` with the key printed in the dashboard console, or deploy with `BUGSHIELD_KEY` set.
+
 ---
 
 ## Deploy (Render free tier + Supabase free Postgres)

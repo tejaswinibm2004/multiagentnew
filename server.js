@@ -7,7 +7,7 @@ import { close } from './src/db/db.js';
 import { ensureSeedUser, userFromToken, attachAuth } from './src/http/auth.js';
 import { csrfGuard } from './src/http/csrf.js';
 import { mountApp } from './src/http/router.js';
-import { seedDemoData } from './src/seed.js';
+import { seedDemoData, ensureDemoSites } from './src/seed.js';
 import { attachWebSocket, broadcast } from './src/realtime.js';
 import { setHandler, startQueue, recoverStuck } from './src/queue/jobQueue.js';
 import { jobHandler } from './src/agents/orchestrator.js';
@@ -15,7 +15,10 @@ import { jobHandler } from './src/agents/orchestrator.js';
 async function main() {
   await runMigrations();
   await ensureSeedUser();
-  if (config.env !== 'production') await seedDemoData();
+  if (config.env !== 'production') {
+    await seedDemoData();
+    await ensureDemoSites();
+  }
 
   const app = express();
   app.use(attachAuth(app));
