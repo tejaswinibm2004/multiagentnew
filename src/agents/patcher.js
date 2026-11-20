@@ -97,7 +97,7 @@ export async function patcher(ctx) {
   await step(ctx, 'PATCHER', 'ok', `Generated ${edits.length} edit(s) across ${new Set(edits.map((e) => e.file)).size} file(s)${usedFallback ? ' (deterministic fallback)' : ''}`, { edits, fallback: usedFallback });
   await insertGetId('patches', {
     issue_id: ctx.issue.id,
-    files_json: JSON.stringify(edits.map((e) => ({ path: e.file, search: e.search, replace: e.replace }))),
+    files_json: JSON.stringify(edits.map((e) => ({ file: e.file, path: e.file, search: e.search, replace: e.replace }))),
     unified_diff: applied.diff, summary: ctx.patchSummary, created_at: new Date().toISOString(),
   });
   await update('issues', ctx.issue.id, { summary: ctx.patchSummary });

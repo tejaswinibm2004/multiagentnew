@@ -1,5 +1,36 @@
 import { ghFetch, configured } from './client.js';
 
+// Fine-grained PATs cannot use the Git Data blob endpoint on some setups
+// ("Resource not accessible by personal access token"). Fall back to the
+// Contents API, which writes one commit per file (NOT atomic) - recorded honestly.
+async function commitViaContents({ repo, branch, files, message }) {
+  const commits = [];
+  for (const f of files) {
+    const path = f.path.split('/').map(encodeURIComponent).join('/');
+    const current = await ghFetch(`/repos/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`);
+    const sha = current.ok ? current.data.sha : undefined;
+    const put = await ghFetch(`/repos/${repo}/contents/${path}`, {
+      method: 'PUT',
+      body: {
+        message,
+        content: Buffer.from(f.content, 'utf8').toString('base64'),
+        branch,
+        ...(sha ? { sha } : {}),
+      },
+    });
+    if (!put.ok) return { ok: false, reason: 'CONTENTS_PUT_FAILED', detail: `put ${put.status}: ${put.data?.message || ''}` };
+    commits.push(put.data?.commit?.sha);
+  }
+  return {
+    ok: true,
+    sha: commits[commits.length - 1],
+    html_url: `https://github.com/${repo}/commit/${commits[commits.length - 1]}`,
+    mode: 'contents-api',
+    atomic: false,
+    note: 'Git Data API unavailable for this token; wrote one commit per file (non-atomic)',
+  };
+}
+
 // Atomic multi-file commit via Git Data API: ref -> commit -> blobs -> tree -> commit -> ref.
 // Non-fast-forward is handled by rebuilding once on the freshly fetched ref.
 export async function commitFiles({ repo, branch = 'main', files, message }) {
@@ -18,7 +49,12 @@ export async function commitFiles({ repo, branch = 'main', files, message }) {
     const blobs = [];
     for (const f of files) {
       const b = await ghFetch(`/repos/${repo}/git/blobs`, { method: 'POST', body: { content: f.content, encoding: 'utf-8' } });
-      if (!b.ok) return { ok: false, reason: 'BLOB_FAILED', detail: `blob ${b.status}` };
+      if (!b.ok) {
+        if (b.status === 403 && /personal access token/i.test(String(b.data?.message || ''))) {
+          return commitViaContents({ repo, branch, files, message });
+        }
+        return { ok: false, reason: 'BLOB_FAILED', detail: `blob ${b.status}: ${b.data?.message || ''}` };
+      }
       blobs.push({ path: f.path, mode: '100644', type: 'blob', sha: b.data.sha });
     }
 

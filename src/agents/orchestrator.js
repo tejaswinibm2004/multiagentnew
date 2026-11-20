@@ -14,6 +14,11 @@ import { verifier } from './verifier.js';
 import { step, setStatus, audit } from './common.js';
 import { revertCommit } from '../github/committer.js';
 
+// Older patch rows stored the key as `path`; the applier expects `file`.
+export function normalizeStoredEdits(edits = []) {
+  return edits.map((e) => ({ ...e, file: e.file || e.path }));
+}
+
 export async function loadCtx(issueId, broadcast) {
   const issue = await get('SELECT * FROM issues WHERE id = ?', [issueId]);
   if (!issue) throw new Error('issue not found');
@@ -30,7 +35,7 @@ export async function loadCtx(issueId, broadcast) {
 async function rebuildPatch(ctx) {
   const patch = await get('SELECT * FROM patches WHERE issue_id = ? ORDER BY id DESC LIMIT 1', [ctx.issue.id]);
   if (!patch) throw new Error('no patch stored');
-  const edits = parseJson(patch.files_json, []);
+  const edits = normalizeStoredEdits(parseJson(patch.files_json, []));
   const files = {};
   for (const e of edits) {
     if (files[e.path] != null) continue;

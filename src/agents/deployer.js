@@ -65,7 +65,9 @@ export async function deployer(ctx) {
       status: 'DEPLOYING', commit_url: committed.html_url, created_at: nowIso(),
     });
     ctx.deploymentId = depId;
-    await step(ctx, 'DEPLOYER', 'ok', `Committed ${committed.sha.slice(0, 8)} atomically`, { sha: committed.sha, commit_url: committed.html_url });
+    await step(ctx, 'DEPLOYER', 'ok',
+      `Committed ${committed.sha.slice(0, 8)} ${committed.atomic === false ? 'via Contents API (non-atomic)' : 'atomically'}`,
+      { sha: committed.sha, commit_url: committed.html_url, mode: committed.mode || 'git-data', atomic: committed.atomic !== false });
     await update('issues', ctx.issue.id, { deploy_sha: committed.sha });
     await audit(ctx.issue.approver || 'bot', 'commit_pushed', ctx.issue.issue_key, { sha: committed.sha });
     await setStatus(ctx, 'DEPLOYING');

@@ -4,7 +4,9 @@ import { extractCases } from '../src/agents/intake.js';
 import { scorePath } from '../src/agents/localizer.js';
 import { fallbackVerdict } from '../src/agents/analyzer.js';
 import { extractSha } from '../src/agents/verifier.js';
+import { applyEdits } from '../src/agents/patcher.js';
 import { summarize, validateFile } from '../src/validators/index.js';
+import { normalizeStoredEdits } from '../src/agents/orchestrator.js';
 import { runCommand } from '../src/validators/base.js';
 
 test('intake: extracts quoted strings, selectors and stack files', () => {
@@ -34,6 +36,13 @@ test('analyzer: deterministic fallback detects a known typo with evidence', () =
 test('analyzer: vague report is not a defect', () => {
   const v = fallbackVerdict({ title: 'Broken', description: 'Nothing specific', cases: [], snippets: [], chosen: [] });
   assert.equal(v.is_defect, false);
+});
+
+test('orchestrator: legacy stored edits using `path` are normalized for applyEdits', () => {
+  const edits = normalizeStoredEdits([{ path: 'index.html', search: 'Shoping Cart', replace: 'Shopping Cart' }]);
+  assert.equal(edits[0].file, 'index.html');
+  const files = { 'index.html': '<span>Shoping Cart</span>' };
+  assert.ok(applyEdits(edits, files).files['index.html'].includes('Shopping Cart'));
 });
 
 test('verifier: extractSha handles all version.json shapes', () => {
