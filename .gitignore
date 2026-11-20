@@ -1,5 +1,6 @@
 node_modules/
 demo-websites/
+demo-env-values.txt
 .env
 .env.local
 *.log
