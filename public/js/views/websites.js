@@ -110,6 +110,8 @@ function wizard() {
       } catch (e) { toast(e.message, 'err'); }
     };
   };
-  const m = modal({ title: 'Connect a website', body: '', foot: '', wide: false });
+  // The footer element must exist before render() fills it — an empty string
+  // makes modal() omit .modal-foot, which left the wizard with no Continue button.
+  const m = modal({ title: 'Connect a website', body: '', foot: '<span></span>', wide: false });
   render(m);
 }
