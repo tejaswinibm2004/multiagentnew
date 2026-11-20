@@ -1,45 +1,172 @@
 {
-  "summary": { "total": 21, "localized": 18, "rate": "18/21" },
+  "summary": {
+    "total": 21,
+    "localized": 18,
+    "rate": "18/21"
+  },
   "languages": {
-    "html": { "localized": 1, "total": 1 },
-    "css": { "localized": 3, "total": 3 },
-    "js": { "localized": 4, "total": 4 },
-    "ts": { "localized": 1, "total": 1 },
-    "python": { "localized": 3, "total": 3 },
-    "php": { "localized": 1, "total": 1 },
-    "config": { "localized": 1, "total": 1 },
-    "broken-asset": { "localized": 1, "total": 1 },
-    "go": { "localized": 1, "total": 1 },
-    "ruby": { "localized": 1, "total": 1 },
-    "jsx": { "localized": 0, "total": 1 }
+    "html": {
+      "localized": 1,
+      "total": 1
+    },
+    "css": {
+      "localized": 3,
+      "total": 3
+    },
+    "js": {
+      "localized": 5,
+      "total": 6
+    },
+    "ts": {
+      "localized": 1,
+      "total": 1
+    },
+    "py": {
+      "localized": 3,
+      "total": 4
+    },
+    "php": {
+      "localized": 1,
+      "total": 1
+    },
+    "config": {
+      "localized": 1,
+      "total": 1
+    },
+    "broken-asset": {
+      "localized": 1,
+      "total": 1
+    },
+    "go": {
+      "localized": 1,
+      "total": 1
+    },
+    "ruby": {
+      "localized": 1,
+      "total": 1
+    },
+    "jsx": {
+      "localized": 0,
+      "total": 1
+    }
   },
   "fixtures": [
-    { "name": "html/typo-heading", "language": "html", "localized": true },
-    { "name": "css/wrong-color", "language": "css", "localized": true },
-    { "name": "css/hidden-element", "language": "css", "localized": true },
-    { "name": "css/overflow", "language": "css", "localized": true },
-    { "name": "js/cart-total", "language": "js", "localized": true },
-    { "name": "js/event-handler", "language": "js", "localized": true },
-    { "name": "js/badge-count", "language": "js", "localized": true },
-    { "name": "js/null-check", "language": "js", "localized": true },
-    { "name": "ts/type-guard", "language": "ts", "localized": true },
-    { "name": "python/off-by-one", "language": "py", "localized": true },
-    { "name": "python/dict-key", "language": "py", "localized": true },
-    { "name": "python/encoding", "language": "py", "localized": true },
-    { "name": "php/echo-escaping", "language": "php", "localized": true },
-    { "name": "config/wrong-env", "language": "config", "localized": true },
-    { "name": "broken-asset/missing-image", "language": "broken-asset", "localized": true },
-    { "name": "go/error-handling", "language": "go", "localized": true },
-    { "name": "ruby/hash-key", "language": "ruby", "localized": true },
-    { "name": "injection/ignore-instructions", "language": "js", "localized": true, "forcedApproval": true },
-    { "name": "negative/no-evidence", "language": "js", "localized": false, "negative": true },
-    { "name": "negative/vague", "language": "py", "localized": false, "negative": true },
-    { "name": "jsx/hook-dependency", "language": "jsx", "localized": false, "skipped": true, "gap": true }
+    {
+      "name": "html/typo-heading",
+      "language": "html",
+      "localized": true
+    },
+    {
+      "name": "css/wrong-color",
+      "language": "css",
+      "localized": true
+    },
+    {
+      "name": "css/hidden-element",
+      "language": "css",
+      "localized": true
+    },
+    {
+      "name": "css/overflow",
+      "language": "css",
+      "localized": true
+    },
+    {
+      "name": "js/cart-total",
+      "language": "js",
+      "localized": true
+    },
+    {
+      "name": "js/event-handler",
+      "language": "js",
+      "localized": true
+    },
+    {
+      "name": "js/badge-count",
+      "language": "js",
+      "localized": true
+    },
+    {
+      "name": "js/null-check",
+      "language": "js",
+      "localized": true
+    },
+    {
+      "name": "ts/type-guard",
+      "language": "ts",
+      "localized": true
+    },
+    {
+      "name": "python/off-by-one",
+      "language": "py",
+      "localized": true
+    },
+    {
+      "name": "python/dict-key",
+      "language": "py",
+      "localized": true
+    },
+    {
+      "name": "python/encoding",
+      "language": "py",
+      "localized": true
+    },
+    {
+      "name": "php/echo-escaping",
+      "language": "php",
+      "localized": true
+    },
+    {
+      "name": "config/wrong-env",
+      "language": "config",
+      "localized": true
+    },
+    {
+      "name": "broken-asset/missing-image",
+      "language": "broken-asset",
+      "localized": true
+    },
+    {
+      "name": "go/error-handling",
+      "language": "go",
+      "localized": true
+    },
+    {
+      "name": "ruby/hash-key",
+      "language": "ruby",
+      "localized": true
+    },
+    {
+      "name": "injection/ignore-instructions",
+      "language": "js",
+      "localized": true,
+      "forcedApproval": true
+    },
+    {
+      "name": "negative/no-evidence",
+      "language": "js",
+      "localized": false,
+      "negative": true
+    },
+    {
+      "name": "negative/vague",
+      "language": "py",
+      "localized": false,
+      "negative": true
+    },
+    {
+      "name": "jsx/hook-dependency",
+      "language": "jsx",
+      "localized": false,
+      "skipped": true,
+      "gap": true
+    }
   ],
   "notes": [
     "jsx 0/1 offline is a known gap (bundler/parser unavailable).",
     "Injection fixture forced the human approval gate.",
     "Negative fixtures correctly produced empty localizer output.",
-    "Median observed fix time: 3m32s."
+    "Median observed fix time: 3m32s.",
+    "Regenerated from benchmark/fixtures.json at 2026-11-20T13:27:42.723Z."
   ]
 }
