@@ -22,6 +22,12 @@ npm start          # http://localhost:10000
 
 Both UI and API run in one process. `npm test` runs 32 `node:test` tests. `npm run eval` regenerates the Evaluation view JSON.
 
+### Workspace controls
+
+- **Settings → Appearance**: dark / light / system theme, persisted before paint.
+- **Settings → Change password**: verify current password, 12-char minimum, other sessions signed out.
+- **Team (owner only)**: invite by email → pending invitation with no access → owner approves → account created and a one-time password is shown once. Non-owners cannot invite or approve (server-enforced).
+
 ### Extra demo websites
 
 `npm run demo` starts a static server on **http://localhost:5173** with four client sites:

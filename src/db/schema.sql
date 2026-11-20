@@ -12,6 +12,17 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires_at INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS invitations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  role TEXT NOT NULL DEFAULT 'viewer',
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  invited_by TEXT NOT NULL DEFAULT '',
+  approved_by TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  decided_at TEXT
+);
 CREATE TABLE IF NOT EXISTS websites (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,

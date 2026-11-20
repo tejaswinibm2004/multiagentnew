@@ -2,7 +2,7 @@ import express from 'express';
 import { config, sha256 } from '../config.js';
 import { get, all, query, insertGetId, update, dialect } from '../db/db.js';
 import { asyncRoute, jsonError, issueKey, nowIso, clamp, parseJson } from '../util.js';
-import { hashPassword, verifyPassword, strongEnough, createSession, destroySession, requireRole, isApprover } from './auth.js';
+import { hashPassword, verifyPassword, strongEnough, createSession, destroySession, requireRole, isApprover, isOwner, changePassword } from './auth.js';
 import { makeRateLimiter } from './rateLimit.js';
 import { scrubPayload } from './redact.js';
 import { enqueue } from '../queue/jobQueue.js';
@@ -120,6 +120,16 @@ export function createRouter() {
   }));
 
   api.get('/auth/me', (req, res) => res.json({ user: req.user || null }));
+
+  api.post('/auth/change-password', asyncRoute(async (req, res) => {
+    if (!req.user) return jsonError(res, 401, 'Authentication required');
+    try {
+      await changePassword(req.user.id, req.body?.current, req.body?.next, req.token);
+      await query('INSERT INTO audit_log (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)',
+        [req.user.email, 'password_changed', req.user.email, '{}', nowIso()]);
+      return res.json({ ok: true, note: 'Password changed. Other sessions were signed out.' });
+    } catch (e) { return jsonError(res, 400, e.message); }
+  }));
 
   // ---------- websites ----------
   api.get('/api/websites', requireRole('viewer'), asyncRoute(async (req, res) => {
@@ -288,12 +298,63 @@ export function createRouter() {
     res.json({ members: rows });
   }));
 
-  api.post('/api/members', requireRole('admin'), asyncRoute(async (req, res) => {
+  // Owner-only member provisioning. Direct create is kept for admin scripts;
+  // the UI uses the invite -> approve flow below so nobody gets access before approval.
+  api.post('/api/members', requireRole('owner'), asyncRoute(async (req, res) => {
     const { email, name, role } = req.body || {};
     if (!email || !ROLES.includes(role)) return jsonError(res, 400, 'email and valid role required');
     const pw = randomToken(12);
     const id = await insertGetId('users', { email: String(email).toLowerCase(), name: name || String(email), password_hash: hashPassword(pw), role });
     res.status(201).json({ ok: true, id, tempPassword: pw, note: 'Shown once.' });
+  }));
+
+  api.post('/api/members/invite', requireRole('owner'), asyncRoute(async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const role = String(req.body?.role || 'viewer');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError(res, 400, 'Valid email required');
+    if (!ROLES.includes(role) || role === 'owner') return jsonError(res, 400, 'Role must be viewer, reviewer or admin');
+    if (await get('SELECT id FROM users WHERE email = ?', [email])) return jsonError(res, 409, 'This email already has an account');
+    const pending = await get(`SELECT id FROM invitations WHERE email = ? AND status = 'PENDING'`, [email]);
+    if (pending) return jsonError(res, 409, 'An invitation is already pending for this email');
+    await query(
+      `INSERT INTO invitations (email, role, status, invited_by, note, created_at) VALUES (?, ?, 'PENDING', ?, ?, ?)`,
+      [email, role, req.user.email, String(req.body?.note || '').slice(0, 300), nowIso()]
+    );
+    await query('INSERT INTO audit_log (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)',
+      [req.user.email, 'invitation_created', email, JSON.stringify({ role }), nowIso()]);
+    res.status(201).json({ ok: true, note: 'Invitation created. It has no access until you approve it.' });
+  }));
+
+  api.get('/api/members/invitations', requireRole('owner'), asyncRoute(async (req, res) => {
+    const rows = await all('SELECT * FROM invitations ORDER BY id DESC');
+    res.json({ invitations: rows });
+  }));
+
+  api.post('/api/members/invitations/:id/approve', requireRole('owner'), asyncRoute(async (req, res) => {
+    const inv = await get('SELECT * FROM invitations WHERE id = ?', [req.params.id]);
+    if (!inv) return jsonError(res, 404, 'Invitation not found');
+    if (inv.status !== 'PENDING') return jsonError(res, 409, 'Invitation already decided');
+    if (await get('SELECT id FROM users WHERE email = ?', [inv.email])) {
+      await query(`UPDATE invitations SET status='REJECTED', decided_at=? WHERE id=?`, [nowIso(), inv.id]);
+      return jsonError(res, 409, 'An account with this email already exists');
+    }
+    const pw = randomToken(12);
+    const name = inv.email.split('@')[0];
+    const userId = await insertGetId('users', { email: inv.email, name, password_hash: hashPassword(pw), role: inv.role });
+    await query(`UPDATE invitations SET status='APPROVED', approved_by=?, decided_at=? WHERE id=?`, [req.user.email, nowIso(), inv.id]);
+    await query('INSERT INTO audit_log (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)',
+      [req.user.email, 'invitation_approved', inv.email, JSON.stringify({ role: inv.role, userId }), nowIso()]);
+    res.json({ ok: true, userId, tempPassword: pw, note: 'Shown once. Send it to the member.' });
+  }));
+
+  api.post('/api/members/invitations/:id/reject', requireRole('owner'), asyncRoute(async (req, res) => {
+    const inv = await get('SELECT * FROM invitations WHERE id = ?', [req.params.id]);
+    if (!inv) return jsonError(res, 404, 'Invitation not found');
+    if (inv.status !== 'PENDING') return jsonError(res, 409, 'Invitation already decided');
+    await query(`UPDATE invitations SET status='REJECTED', approved_by=?, decided_at=? WHERE id=?`, [req.user.email, nowIso(), inv.id]);
+    await query('INSERT INTO audit_log (actor, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)',
+      [req.user.email, 'invitation_rejected', inv.email, '{}', nowIso()]);
+    res.json({ ok: true });
   }));
 
   api.get('/api/health', (req, res) => res.json({ ok: true, service: 'bugshield', env: config.env, ts: nowIso() }));

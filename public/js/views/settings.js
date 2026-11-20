@@ -1,6 +1,6 @@
 import { api, post } from '../core/api.js';
 import { icon, esc, timeAgo } from '../core/util.js';
-import { toast, empty } from '../components/ui.js';
+import { toast, empty, modal } from '../components/ui.js';
 import { state, loadAll } from '../core/store.js';
 
 export function settingsView() {
@@ -23,6 +23,23 @@ export function settingsView() {
           ${Object.entries(integ).map(([k, v]) => `<div class="health-row"><span class="muted">${k}</span><span class="badge ${v === 'connected' || v === 'sqlite' || v === 'postgres' ? 'green' : 'gray'}">${esc(v)}</span></div>`).join('') || empty('No integration data','—','plug')}
           <p class="small dim" style="margin-top:14px">AI and GitHub run through fetch to OpenAI-compatible and Git Data APIs. Missing keys produce AI_UNAVAILABLE / GITHUB_UNAVAILABLE — never silent success.</p>
         </div></div>
+
+        <div class="card"><div class="card-head"><h3>${icon('palette','sm')} Appearance</h3><span class="badge gray">saved to this browser</span></div><div class="card-body">
+          <p class="small muted" style="margin-bottom:14px">Choose a fixed theme or follow your system preference. The choice is applied before the page paints.</p>
+          <div class="row wrap" id="themePicker">
+            ${[['dark','Moon','moon'],['light','Sun','sun'],['system','System','monitor']].map(([v,l,i]) => `<button class="chip ${state.theme === v ? 'active' : ''}" data-theme="${v}">${icon(i,'sm')} ${l}</button>`).join('')}
+          </div>
+        </div></div>
+
+        <div class="card"><div class="card-head"><h3>${icon('lock-keyhole','sm')} Change password</h3><span class="badge violet">your account</span></div><div class="card-body">
+          <form id="pwForm">
+            <div class="field" style="margin-bottom:12px"><label>Current password</label><input class="input" id="pwCurrent" type="password" autocomplete="current-password" required></div>
+            <div class="field" style="margin-bottom:12px"><label>New password (12+ characters)</label><input class="input" id="pwNext" type="password" autocomplete="new-password" required></div>
+            <div class="field" style="margin-bottom:14px"><label>Confirm new password</label><input class="input" id="pwConfirm" type="password" autocomplete="new-password" required></div>
+            <button class="btn primary" type="submit">${icon('key-round','sm')} Update password</button>
+            <p class="small dim" style="margin-top:10px">Changing your password signs out your other sessions but keeps this one active.</p>
+          </form>
+        </div></div>
       </div>
     </div>`,
       mount(root) {
@@ -32,11 +49,27 @@ export function settingsView() {
             toast('Policy saved', 'ok'); await loadAll();
           } catch (e) { toast(e.message, 'err'); }
         };
+        root.querySelectorAll('[data-theme]').forEach((b) => b.onclick = () => {
+          window.dispatchEvent(new CustomEvent('bs:theme', { detail: { theme: b.dataset.theme } }));
+          root.querySelectorAll('[data-theme]').forEach((x) => x.classList.toggle('active', x === b));
+        });
+        root.querySelector('#pwForm').onsubmit = async (e) => {
+          e.preventDefault();
+          const current = root.querySelector('#pwCurrent').value;
+          const next = root.querySelector('#pwNext').value;
+          const confirm = root.querySelector('#pwConfirm').value;
+          if (next !== confirm) { toast('New passwords do not match', 'err'); return; }
+          try {
+            await post('/auth/change-password', { current, next });
+            toast('Password updated', 'ok'); e.target.reset();
+          } catch (err) { toast(err.message, 'err'); }
+        };
       },
     };
 }
 
 export function teamView() {
+  const owner = state.user?.role === 'owner';
   const roles = ['viewer', 'reviewer', 'admin', 'owner'];
   const matrix = {
     'View issues': '✓ ✓ ✓ ✓', 'Approve fixes': '· ✓ ✓ ✓', 'Manage sites': '· · ✓ ✓',
@@ -44,10 +77,26 @@ export function teamView() {
   };
   return {
     html: `<div class="page">
-      <div class="page-head"><div><div class="eyebrow">Access control</div><h1>Team</h1><div class="sub">Four roles. Sessions are opaque, hashed at rest, 12h TTL.</div></div>
-        <button class="btn primary" id="addMember">${icon('user-plus','sm')} Add member</button></div>
+      <div class="page-head"><div><div class="eyebrow">Access control</div><h1>Team</h1>
+        <div class="sub">Members get access only after you approve their email. Sessions are opaque, hashed at rest, 12h TTL.</div></div>
+        ${owner ? '<span class="badge violet">Owner controls enabled</span>' : '<span class="badge gray">Read-only · owner only can invite</span>'}</div>
+      ${owner ? `<div class="grid grid-2" style="margin-bottom:16px">
+        <div class="card"><div class="card-head"><h3>${icon('mail-plus','sm')} Invite by email</h3></div><div class="card-body">
+          <form id="inviteForm">
+            <div class="field" style="margin-bottom:12px"><label>Email address</label><input class="input" id="invEmail" type="email" placeholder="teammate@example.com" required></div>
+            <div class="field" style="margin-bottom:12px"><label>Role</label><select class="select" id="invRole">
+              <option value="viewer">viewer — read only</option><option value="reviewer" selected>reviewer — can approve fixes</option><option value="admin">admin — can manage sites & team</option>
+            </select></div>
+            <div class="field" style="margin-bottom:14px"><label>Note (optional)</label><input class="input" id="invNote" placeholder="Why they need access"></div>
+            <button class="btn primary" type="submit">${icon('send','sm')} Send invitation</button>
+          </form>
+          <p class="small dim" style="margin-top:10px">An invitation grants zero access. After you approve it, an account is created and a one-time password is shown to you.</p>
+        </div></div>
+        <div class="card"><div class="card-head"><h3>${icon('inbox','sm')} Pending approvals</h3><span class="badge amber" id="pendingCount">0</span></div>
+          <div class="card-body" id="inviteList"><div class="skel line"></div><div class="skel line"></div></div></div>
+      </div>` : ''}
       <div class="grid" style="grid-template-columns:1.3fr 1fr">
-        <div class="card"><div class="table-wrap" style="border:0;border-radius:0"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead><tbody>
+        <div class="card"><div class="table-wrap" style="border:0;border-radius:0"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead><tbody id="memberRows">
           ${(state.members || []).map((m) => `<tr><td><span class="row"><span class="avatar">${esc(m.name.slice(0,2).toUpperCase())}</span>${esc(m.name)}</span></td><td class="mono small">${esc(m.email)}</td><td><span class="badge ${m.role === 'owner' ? 'violet' : 'gray'}">${esc(m.role)}</span></td><td class="dim small">${timeAgo(m.created_at)}</td></tr>`).join('')}
         </tbody></table></div></div>
         <div class="card"><div class="card-head"><h3>${icon('table-2','sm')} Role matrix</h3></div><div class="card-body">
@@ -57,18 +106,52 @@ export function teamView() {
       </div>
     </div>`,
       mount(root) {
-        root.querySelector('#addMember').onclick = async () => {
-          const email = prompt('Member email:');
-          if (!email) return;
-          const role = prompt('Role (viewer/reviewer/admin):', 'reviewer');
-          if (!roles.includes(role) || role === 'owner') return toast('Invalid role', 'err');
+        if (!owner) return;
+        const loadInvites = async () => {
           try {
-            const r = await post('/api/members', { email, name: email.split('@')[0], role });
-            toast(`Added. Temp password: ${r.tempPassword}`, 'ok', 12000);
-            const m = await api('/api/members'); emitMembers(m.members);
+            const r = await api('/api/members/invitations');
+            const pending = r.invitations.filter((i) => i.status === 'PENDING');
+            root.querySelector('#pendingCount').textContent = String(pending.length);
+            root.querySelector('#inviteList').innerHTML = r.invitations.length ? r.invitations.map((inv) => `
+              <div class="health-row"><div><b>${esc(inv.email)}</b><div class="tiny dim">${esc(inv.role)} · invited by ${esc(inv.invited_by)} · ${timeAgo(inv.created_at)}</div></div>
+                ${inv.status === 'PENDING'
+                  ? `<span class="row"><button class="btn good xs" data-approve="${inv.id}">Approve</button><button class="btn xs" data-reject="${inv.id}">Reject</button></span>`
+                  : `<span class="badge ${inv.status === 'APPROVED' ? 'green' : 'gray'}">${esc(inv.status)}</span>`}</div>`).join('')
+              : empty('No invitations yet', 'Invite a teammate by email above.', 'mail');
+            root.querySelectorAll('[data-approve]').forEach((b) => b.onclick = () => approve(b.dataset.approve));
+            root.querySelectorAll('[data-reject]').forEach((b) => b.onclick = async () => {
+              try { await post(`/api/members/invitations/${b.dataset.reject}/reject`, {}); toast('Invitation rejected', 'info'); loadInvites(); }
+              catch (e) { toast(e.message, 'err'); }
+            });
           } catch (e) { toast(e.message, 'err'); }
         };
-        api('/api/members').then((m) => emitMembers(m.members)).catch(() => {});
+        const approve = async (id) => {
+          try {
+            const r = await post(`/api/members/invitations/${id}/approve`, {});
+            const m = modal({
+              title: 'Access approved',
+              body: `<p class="muted small">${esc(r.note)} Send this one-time password to the member. They can now sign in.</p>
+                <div class="mini-diff" style="margin-top:12px">${esc(r.tempPassword)}</div>`,
+              foot: '<button class="btn primary" data-done>Done</button>',
+            });
+            m.el.querySelector('[data-done]').onclick = () => m.close();
+            const members = await api('/api/members'); emitMembers(members.members);
+            loadInvites();
+          } catch (e) { toast(e.message, 'err'); }
+        };
+        root.querySelector('#inviteForm').onsubmit = async (e) => {
+          e.preventDefault();
+          try {
+            await post('/api/members/invite', {
+              email: root.querySelector('#invEmail').value,
+              role: root.querySelector('#invRole').value,
+              note: root.querySelector('#invNote').value,
+            });
+            toast('Invitation created — no access until you approve it', 'ok');
+            e.target.reset(); loadInvites();
+          } catch (err) { toast(err.message, 'err'); }
+        };
+        loadInvites();
       },
     };
 }
@@ -113,7 +196,7 @@ export async function evaluationView() {
   return {
     html: `<div class="page">
       <div class="page-head"><div><div class="eyebrow">Evidence</div><h1>Evaluation</h1>
-        <div class="sub">${esc(r.summary?.localized || 0)}/${esc(r.summary?.total || 0)} fixtures localized · 25/25 backend tests green.</div></div>
+        <div class="sub">${esc(r.summary?.localized || 0)}/${esc(r.summary?.total || 0)} fixtures localized · 32/32 backend tests green.</div></div>
         <span class="chip">${icon('flask-conical','sm')} benchmark v1</span></div>
       <div class="grid grid-2">
         <div class="card"><div class="card-head"><h3>${icon('bar-chart-3','sm')} Localization by language</h3></div><div class="card-body">

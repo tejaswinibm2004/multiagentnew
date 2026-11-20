@@ -37,6 +37,20 @@ export async function destroyUserSessions(userId) {
   await query('DELETE FROM sessions WHERE user_id = ?', [userId]);
 }
 
+// Change password: verify current, require a strong new one, and invalidate all
+// other sessions for this user (the current session stays signed in).
+export async function changePassword(userId, current, next, currentToken) {
+  const user = await get('SELECT password_hash FROM users WHERE id = ?', [userId]);
+  if (!user) throw new Error('User not found');
+  if (!verifyPassword(String(current || ''), user.password_hash)) throw new Error('Current password is incorrect');
+  if (!strongEnough(next)) throw new Error('New password must be at least 12 characters');
+  if (String(current) === String(next)) throw new Error('New password must be different');
+  await query('UPDATE users SET password_hash = ? WHERE id = ?', [hashPassword(next), userId]);
+  const keep = sha256(currentToken || '');
+  await query('DELETE FROM sessions WHERE user_id = ? AND id != ?', [userId, keep]);
+  return { ok: true };
+}
+
 export async function userFromToken(token) {
   if (!token) return null;
   const row = await get(

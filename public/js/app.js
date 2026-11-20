@@ -152,6 +152,8 @@ function openPalette() {
   draw();
 }
 
+window.addEventListener('bs:theme', (e) => setTheme(e.detail.theme));
+
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (state.user) openPalette(); }
   if (e.key === 'Escape') document.querySelector('.backdrop [data-close]')?.click();

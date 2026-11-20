@@ -51,7 +51,9 @@ Schemas: `src/db/schema.sql` (SQLite AUTOINCREMENT) and `src/db/schema.pg.sql` (
 |--------|------|---------|
 | GET | `/api/health` | health probe |
 | POST | `/api/v1/issues` | public ingestion (only CORS-open route) |
-| POST | `/auth/login`, `/auth/logout` | session auth |
+| POST | `/auth/login`, `/auth/logout`, `/auth/change-password` | session auth + password change |
+| POST | `/api/members/invite`, `/api/members/invitations/:id/approve\|reject` | owner-only invite → approve workflow |
+| GET | `/api/members/invitations` | owner-only invitation list |
 | GET | `/auth/me` | current user |
 | CRUD | `/api/websites`, `/api/websites/:id` | site config + `/test` + `/keys` |
 | GET | `/api/issues`, `/api/issues/:id` | list (cursor) + full detail |

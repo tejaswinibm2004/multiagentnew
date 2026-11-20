@@ -12,6 +12,17 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires_at BIGINT NOT NULL,
   created_at TEXT NOT NULL DEFAULT now()::text
 );
+CREATE TABLE IF NOT EXISTS invitations (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  role TEXT NOT NULL DEFAULT 'viewer',
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  invited_by TEXT NOT NULL DEFAULT '',
+  approved_by TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT now()::text,
+  decided_at TEXT
+);
 CREATE TABLE IF NOT EXISTS websites (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,

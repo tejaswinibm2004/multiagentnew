@@ -7,7 +7,8 @@
 - **Opaque sessions** — 256-bit random token sent only as a cookie; SHA-256 hash stored at rest; 12h TTL; HttpOnly + SameSite=Strict.
 - **Plain `fetch` to GitHub** — no Octokit. Headers built in one function so the token can never be swapped with an options object.
 - **Vanilla UI** — no framework, no build step; one process serves API and SPA.
-- **No invite-link SMTP** — members are created directly by an admin/reviewer.
+- **No invite-link SMTP** — the owner creates an invitation by email, then explicitly approves it; only on approval is an account created and a one-time password shown to the owner. A pending invitation has no access.
+- **Change password is available** to every signed-in user (current password verified, 12-char minimum, other sessions invalidated). Added by request; it was originally listed as a non-goal.
 - **No screenshots / no headless-browser repro** — evidence says "not performed" rather than implying visual verification.
 - **No project dependency installation during validation** — validators run host tools only; missing runtimes report `NOT_PERFORMED`.
 - **Money-in-diff always needs a human** — disclosed false positive: `#cart` in a rewritten nav line triggered the gate. The gate is intentionally conservative; no override.
@@ -25,7 +26,7 @@
 
 ## Non-goals
 
-Multi-tenancy · GitLab/Bitbucket · CI triggering · canary deploys · SSO · billing · mobile apps · change-password endpoint · member/site delete · onboarding checklist · before/after preview · notifications · i18n.
+Multi-tenancy · GitLab/Bitbucket · CI triggering · canary deploys · SSO · billing · mobile apps · member/site delete · onboarding checklist · before/after preview · notifications (besides in-app toasts) · i18n.
 
 ## Secrets policy
 
