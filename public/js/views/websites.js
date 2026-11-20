@@ -72,6 +72,15 @@ export function websiteDetailView() {
   return { html, mount(root) { root.querySelector('[data-back]').onclick = () => window.dispatchEvent(new CustomEvent('bs:navigate', { detail: { view: 'websites' } })); } };
 }
 
+function normalizeRepo(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^https?:\/\/(www\.)?github\.com\//i, '')
+    .replace(/^git@github\.com:/i, '')
+    .replace(/\.git$/i, '')
+    .replace(/\/+$/, '');
+}
+
 function wizard() {
   let step = 0;
   const data = { name: '', repo_full_name: '', branch: 'main', live_url: '', version_json_url: '', allowed_origins: '', always_approve: false, auto_deploy: true };
@@ -82,7 +91,10 @@ function wizard() {
     const stepHtml = `<div class="wiz-steps">${['Basics', 'Connection', 'Review'].map((s, n) => `<div class="ws ${n === step ? 'active' : n < step ? 'done' : ''}">${n < step ? '✓ ' : `${n + 1}. `}${s}</div>`).join('')}</div>`;
     let form = '';
     if (step === 0) form = `<div class="field" style="margin-bottom:14px"><label>Display name</label><input class="input" id="wName" placeholder="Amazin Demo Shop" value="${esc(data.name)}"></div>
-      <div class="field"><label>GitHub repo (owner/name)</label><input class="input" id="wRepo" placeholder="your-org/shop-re-test" value="${esc(data.repo_full_name)}"></div>`;
+      <div class="field"><label>GitHub repo (owner/name)</label><input class="input" id="wRepo" placeholder="tejaswinibm2004/demo1" value="${esc(data.repo_full_name)}">
+        <span class="tiny dim">A pasted GitHub URL is accepted — it becomes owner/name.</span></div>
+      <div class="row" style="margin-top:14px"><button class="btn primary sm" data-quick-connect>${icon('plug-zap','sm')} Connect now</button>
+        <span class="tiny dim">or Continue to add a live URL</span></div>`;
     if (step === 1) form = `<div class="field" style="margin-bottom:12px"><label>Live URL</label><input class="input" id="wUrl" placeholder="https://shop.onrender.com" value="${esc(data.live_url)}"></div>
       <div class="field" style="margin-bottom:12px"><label>version.json URL</label><input class="input" id="wVer" placeholder="https://shop.onrender.com/version.json" value="${esc(data.version_json_url)}"></div>
       <div class="field" style="margin-bottom:12px"><label>Branch</label><input class="input" id="wBranch" value="${esc(data.branch)}"></div>
@@ -96,18 +108,28 @@ function wizard() {
     foot.innerHTML = `${step > 0 ? '<button class="btn ghost" data-prev>Back</button>' : ''}<span class="spacer"></span>
       <button class="btn ghost" data-cancel>Cancel</button><button class="btn primary" data-next>${step === 2 ? 'Connect website' : 'Continue'}</button>`;
     const grab = () => {
-      if (step === 0) { data.name = body.querySelector('#wName').value; data.repo_full_name = body.querySelector('#wRepo').value; }
+      if (step === 0) { data.name = body.querySelector('#wName').value; data.repo_full_name = normalizeRepo(body.querySelector('#wRepo').value); }
       if (step === 1) { data.live_url = body.querySelector('#wUrl').value; data.version_json_url = body.querySelector('#wVer').value; data.branch = body.querySelector('#wBranch').value; data.allowed_origins = body.querySelector('#wOrigins').value; }
     };
+    const submit = async () => {
+      grab();
+      if (!data.name.trim() || !data.repo_full_name) { toast('Display name and GitHub repo are required', 'err'); return; }
+      try {
+        await post('/api/websites', {
+          ...data,
+          allowed_origins: data.allowed_origins.split(',').map((s) => s.trim()).filter(Boolean),
+          health_urls: data.live_url ? [data.live_url] : [],
+        });
+        m.close(); toast('Website connected — click Test repo to verify', 'ok'); await loadAll();
+      } catch (e) { toast(e.message, 'err'); }
+    };
+    body.querySelector('[data-quick-connect]')?.addEventListener('click', submit);
     foot.querySelector('[data-cancel]').onclick = () => m.close();
     foot.querySelector('[data-prev]')?.addEventListener('click', () => { grab(); step--; render(m); });
     foot.querySelector('[data-next]').onclick = async () => {
       grab();
       if (step < 2) { step++; render(m); return; }
-      try {
-        await post('/api/websites', { ...data, allowed_origins: data.allowed_origins.split(',').map((s) => s.trim()).filter(Boolean), health_urls: data.live_url ? [data.live_url] : [] });
-        m.close(); toast('Website connected', 'ok'); await loadAll();
-      } catch (e) { toast(e.message, 'err'); }
+      submit();
     };
   };
   // The footer element must exist before render() fills it — an empty string
