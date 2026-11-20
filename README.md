@@ -32,14 +32,14 @@ Both UI and API run in one process. `npm test` runs 32 `node:test` tests. `npm r
 
 `npm run demo` starts a static server on **http://localhost:5173** with four client sites:
 
-| Path | Site | Bug categories |
-|------|------|----------------|
-| `/shop` | Amazin Demo Shop | copy typo, cart, checkout |
-| `/account-lab` | AccountLab | login / auth / session |
-| `/counting-lab` | CountingLab | counting / aggregation / pagination |
-| `/cart-lab` | CartLab | cart / money arithmetic |
+| Path | Folder | Bug categories |
+|------|--------|----------------|
+| `/shop` | `demo-websites/amazin-shop` | copy typo, cart, checkout |
+| `/account-lab` | `demo-websites/account-lab` | login / auth / session |
+| `/counting-lab` | `demo-websites/counting-lab` | counting / aggregation / pagination |
+| `/cart-lab` | `demo-websites/cart-lab` | cart / money arithmetic |
 
-All four are seeded into the dashboard's **Websites** view on first boot (and added idempotently to an existing local DB). Each has its own `render.yaml` and build script. Bug lists are in `demo-sites/README.md`. Replace `REPLACE_WITH_DEMO_KEY` in each site's `config.js` with the key printed in the dashboard console, or deploy with `BUGSHIELD_KEY` set.
+All four are seeded into the dashboard's **Websites** view on first boot (and added idempotently to an existing local DB). Each folder is a **self-contained Git repo** with its own `render.yaml`, build script, config template and README. Push each folder as its own repository, then connect it from the dashboard. Bug lists are in each folder's `README.md`. Replace `REPLACE_WITH_DEMO_KEY` in each site's `config.js` with the key from **Websites → New key**, or deploy with `BUGSHIELD_KEY` set.
 
 ---
 

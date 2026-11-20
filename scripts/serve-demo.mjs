@@ -6,10 +6,10 @@ const app = express();
 app.disable('x-powered-by');
 
 const sites = [
-  ['/shop', 'demo-shop'],
-  ['/account-lab', 'demo-sites/account-lab'],
-  ['/counting-lab', 'demo-sites/counting-lab'],
-  ['/cart-lab', 'demo-sites/cart-lab'],
+  ['/shop', 'demo-websites/amazin-shop'],
+  ['/account-lab', 'demo-websites/account-lab'],
+  ['/counting-lab', 'demo-websites/counting-lab'],
+  ['/cart-lab', 'demo-websites/cart-lab'],
 ];
 for (const [route, dir] of sites) {
   app.use(route, express.static(path.join(root, dir), { index: 'index.html' }));
