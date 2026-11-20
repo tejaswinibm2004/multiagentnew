@@ -24,7 +24,7 @@ export async function seedDemoData() {
   const owner = await get('SELECT id FROM users ORDER BY id LIMIT 1');
   const siteId = await insertGetId('websites', {
     name: 'Amazin Demo Shop', slug: 'amazin',
-    repo_full_name: 'YOUR_GITHUB_USER/shop-re-test',
+    repo_full_name: 'tejaswinibm2004/demo1',
     branch: 'main',
     live_url: 'https://shop-re-test.onrender.com',
     version_json_url: 'https://shop-re-test.onrender.com/version.json',
@@ -137,21 +137,21 @@ export async function seedDemoData() {
 // Extra demo sites are added idempotently so existing local databases pick them up on boot.
 const EXTRA_SITES = [
   {
-    name: 'AccountLab', slug: 'account-lab', repo: 'YOUR_GITHUB_USER/account-lab',
+    name: 'AccountLab', slug: 'account-lab', repo: 'tejaswinibm2004/demo2',
     issues: [
       { key: 'ISSUE-login-any-password', title: 'Login accepts any password and reports success on failure', description: 'Sign in accepts any non-empty password. A failed login also shows "Welcome! You are now signed in."', page: '/login', status: 'AWAITING_APPROVAL', risk: 82, band: 'CRITICAL', type: 'security', note: 'Auth/login path — human gate required.', steps: 6, analyzer: { is_defect: true, confidence: 0.95, defect_type: 'security' } },
       { key: 'ISSUE-login-visible-password', title: 'Password field exposes the typed password', description: 'The password input renders as type="text" so the password is visible on screen.', page: '/login', status: 'RECEIVED', risk: 66, band: 'MEDIUM', type: 'security', steps: 0 },
     ],
   },
   {
-    name: 'CountingLab', slug: 'counting-lab', repo: 'YOUR_GITHUB_USER/counting-lab',
+    name: 'CountingLab', slug: 'counting-lab', repo: 'tejaswinibm2004/demo3',
     issues: [
       { key: 'ISSUE-count-off-by-one', title: 'Order count shows 16 when there are 7 orders', description: 'countOrders starts at 1 and loops with <=, so every KPI is inflated.', page: '/', status: 'RECEIVED', risk: 30, band: 'LOW', type: 'logic', steps: 0 },
       { key: 'ISSUE-pagination-last-page', title: 'Pagination hides the last page of orders', description: 'Total pages uses Math.floor instead of Math.ceil, so the final partial page is unreachable.', page: '/orders', status: 'TRIAGING', risk: 35, band: 'LOW', type: 'logic', steps: 2 },
     ],
   },
   {
-    name: 'CartLab', slug: 'cart-lab', repo: 'YOUR_GITHUB_USER/cart-lab',
+    name: 'CartLab', slug: 'cart-lab', repo: 'tejaswinibm2004/demo4',
     issues: [
       { key: 'ISSUE-cart-quantity-string', title: 'Adding the same item twice makes quantity 11', description: 'The quantity uses string concatenation, so a second click turns 1 into 11 and breaks the total.', page: '/', status: 'AWAITING_APPROVAL', risk: 76, band: 'CRITICAL', type: 'money_checkout', note: 'Money identifiers in diff — human gate required.', steps: 6, analyzer: { is_defect: true, confidence: 0.92, defect_type: 'money_checkout' } },
       { key: 'ISSUE-cart-euro-symbol', title: 'Checkout total is charged in euros', description: 'The confirmation shows a euro symbol on a dollar store.', page: '/checkout', status: 'RECEIVED', risk: 48, band: 'MEDIUM', type: 'money_checkout', steps: 0 },
