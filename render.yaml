@@ -1,0 +1,36 @@
+databases:
+  - name: bugshield-db
+    databaseName: bugshield
+    user: bugshield
+
+services:
+  - type: web
+    name: buildshield-re
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: NODE_VERSION
+        value: 24
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bugshield-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: AI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: AI_MODEL
+        value: openai/gpt-oss-120b
+      - key: AI_API_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false

@@ -1,0 +1,14 @@
+node_modules/
+demo-shop/
+.env
+.env.local
+*.log
+.DS_Store
+data/
+coverage/
+PLANTED_BUGS.md
+all-bug.md
+demo-shop/config.js
+demo-shop/version.json
+demo-shop/PLANTED_BUGS.md
+demo-shop/all-bug.md
